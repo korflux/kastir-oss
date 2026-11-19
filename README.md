@@ -193,7 +193,7 @@ Full deploy guide (volumes, ports, build-time notes): [`docs/DEPLOY.md`](./docs/
 
 ---
 
-## 🏗️ Architecture
+## 🧱 Architecture
 
 ```mermaid
 flowchart LR
