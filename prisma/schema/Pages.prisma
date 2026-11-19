@@ -1,0 +1,73 @@
+model PageFolder {
+  id       String       @id @default(cuid())
+  name     String
+  color    String?
+  parentId String?
+  parent   PageFolder?  @relation("PageFolderTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children PageFolder[] @relation("PageFolderTree")
+  pages    Page[]
+  isBase   Boolean      @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([parentId])
+  @@index([isBase])
+}
+
+model Page {
+  id                  String         @id @default(cuid())
+  title               String
+  slug                String         @unique
+  content             String         @db.Text
+  seoTitle            String?
+  seoDescription      String?
+  seoKeyword          String?
+  status              PageStatus     @default(DRAFT)
+  folderId            String
+  folder              PageFolder     @relation(fields: [folderId], references: [id], onDelete: Restrict)
+  authorId            String
+  author              User           @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  snippetScopes       SnippetPageScope[]
+  publishedRevisionId String?        @unique
+  publishedRevision   PageRevision?  @relation("PagePublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: SetNull)
+  revisions           PageRevision[] @relation("PageRevisionHistory")
+  publishedAt         DateTime?
+  deletedAt           DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([folderId])
+  @@index([authorId])
+  @@index([deletedAt])
+  @@index([status])
+  @@index([status, deletedAt])
+}
+
+// Snapshot imutável do rascunho de Page. Sem updatedAt de propósito.
+model PageRevision {
+  id             String   @id @default(cuid())
+  pageId         String
+  page           Page     @relation("PageRevisionHistory", fields: [pageId], references: [id], onDelete: Cascade)
+  title          String
+  slug           String
+  content        String   @db.Text
+  seoTitle       String?
+  seoDescription String?
+  seoKeyword     String?
+  folderId       String
+  authorId       String
+  author         User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  fingerprint    String
+  pinned         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  publishedFor   Page[]   @relation("PagePublishedRevision")
+
+  @@unique([pageId, fingerprint])
+  @@index([pageId, createdAt])
+  @@index([pageId, pinned])
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+}

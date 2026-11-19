@@ -1,0 +1,2 @@
+-- This is an empty migration.
+-- Authentication models are intentionally deferred to Phase 1.

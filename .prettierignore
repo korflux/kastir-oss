@@ -1,0 +1,13 @@
+.next
+.claude
+app/generated
+coverage
+docs
+node_modules
+plan
+public
+spec
+test-results
+# Lockfile is machine-managed — Prettier rewrites YAML structure and thrashs diffs
+pnpm-lock.yaml
+# Artefatos VibeFlow (interview, spec, plan, protótipos HTML): prosa e histórico de fase, não código a formatar

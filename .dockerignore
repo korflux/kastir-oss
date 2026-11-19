@@ -1,0 +1,17 @@
+.git
+.next
+.env
+.env.*
+!.env.example
+coverage
+node_modules
+test-results
+tests
+e2e
+spec
+plan
+docs
+public/e2e-*
+public/uploads/
+.media-staging/
+.tools/

@@ -1,0 +1,81 @@
+model Snippet {
+  id                  String             @id @default(cuid())
+  name                String
+  location            InjectionPoint
+  content             String             @db.Text
+  status              PageStatus         @default(DRAFT)
+  priority            Int?
+  scopeType           ScopeType          @default(ALL_PAGES)
+  scopedPages         SnippetPageScope[]
+  triggerType         TriggerType?
+  triggerConfig       Json?
+  maxDisplays         Int?
+  displayResetDays    Int?
+  publishedRevisionId String?            @unique
+  publishedRevision   SnippetRevision?   @relation("SnippetPublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: SetNull)
+  revisions           SnippetRevision[]  @relation("SnippetRevisionHistory")
+  deletedAt           DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([status, location])
+  @@index([scopeType])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([status, deletedAt])
+}
+
+// Snapshot imutável do rascunho de Snippet. Sem updatedAt de propósito.
+model SnippetRevision {
+  id               String          @id @default(cuid())
+  snippetId        String
+  snippet          Snippet         @relation("SnippetRevisionHistory", fields: [snippetId], references: [id], onDelete: Cascade)
+  name             String
+  location         InjectionPoint
+  content          String          @db.Text
+  priority         Int?
+  scopeType        ScopeType
+  pageIds          String[]
+  triggerType      TriggerType?
+  triggerConfig    Json?
+  maxDisplays      Int?
+  displayResetDays Int?
+  authorId         String
+  author           User            @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  fingerprint      String
+  pinned           Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  publishedFor     Snippet[]       @relation("SnippetPublishedRevision")
+
+  @@unique([snippetId, fingerprint])
+  @@index([snippetId, createdAt])
+  @@index([snippetId, pinned])
+}
+
+model SnippetPageScope {
+  snippetId String
+  pageId    String
+  snippet   Snippet @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  page      Page    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([snippetId, pageId])
+  @@index([pageId])
+}
+
+enum InjectionPoint {
+  HEADER
+  BODY_START
+  BODY_END
+}
+
+enum ScopeType {
+  ALL_PAGES
+  SPECIFIC_PAGES
+}
+
+enum TriggerType {
+  SELECTOR_EVENT
+  PAGE_LOAD
+  SCROLL
+  REFERRER
+}

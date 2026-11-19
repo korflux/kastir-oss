@@ -1,0 +1,36 @@
+allowBuilds:
+  "@prisma/engines": true
+  argon2: true
+  esbuild: true
+  msgpackr-extract: false
+  prisma: true
+  sharp: true
+  unrs-resolver: true
+# Overrides de transitivos: forçam a versão corrigida quando o pai ainda não a
+# puxa. Motivo de cada pin: `pnpm audit --prod --audit-level=high` (gate do
+# quality.yml). Revisar e remover o pin quando o pai passar a exigir a versão
+# corrigida por conta própria.
+overrides:
+  "@hono/node-server": 2.0.12
+  baseline-browser-mapping: 2.11.10 # advisory moderate (<2.11.0); alinha com a cópia que o next já resolve
+  body-parser: 2.4.0 # advisory high (>=2.0.0 <2.4.0), via express do @modelcontextprotocol/sdk
+  brace-expansion@1.1.16: 1.1.18
+  brace-expansion@5.0.8: 5.0.9
+  browserslist: 4.28.7 # advisory high (<=4.28.6), via @babel/core do styled-jsx
+  deepmerge-ts: 8.0.2 # advisory high (<8.0.0), via @prisma/config; só o `deepmerge` simples é usado (o prisma 7.10.1+ já adota 8.0.2)
+  dompurify: 3.4.17 # advisory critical/high (<=3.4.16), via isomorphic-dompurify
+  fast-uri: 3.1.8 # advisory high/moderate (<3.1.8), via ajv
+  hono: 4.13.7 # advisory moderate (<4.13.7), via @modelcontextprotocol/sdk
+  ip-address: 10.7.1 # advisory moderate (<=10.7.0), via express-rate-limit
+  js-yaml@4.3.0: 4.3.1
+  mysql2: 3.23.1 # advisory high/moderate (<=3.23.0), via prisma e better-auth
+  nanoid: 3.3.18 # advisory high (<3.3.18), via postcss
+  postcss: 8.5.23
+  proxy-addr: 2.0.8 # advisory critical (<2.0.8), via express do @modelcontextprotocol/sdk
+  qs: 6.16.0 # advisory moderate (<6.16.0), via body-parser/express
+  sharp: 0.35.5 # advisory high (<0.35.5, librsvg), também puxado como opcional pelo next
+  source-map-js: 1.2.2 # advisory high (<1.2.2), via magicast do prisma
+  undici: 7.30.2 # advisory high (<7.30.1), via jsdom
+  valibot: 1.4.2
+  vite: 8.3.5 # advisory high (<8.1.6, launch-editor), via vitest como peer do better-auth
+  zod: 4.6.7 # advisory high (<4.6.6), via @better-auth/core e better-call; alinha com a dependência direta

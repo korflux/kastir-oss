@@ -1,0 +1,34 @@
+model LogEntry {
+  id          String        @id @default(cuid())
+  userId      String
+  action      String
+  objectType  LogObjectType
+  objectLabel String
+  objectId    String?
+  source      LogSource     @default(PANEL)
+  tool        String?
+  resource    String?
+  requestId   String?
+  createdAt   DateTime      @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([objectType])
+  @@index([objectId])
+  @@index([objectType, createdAt])
+}
+
+enum LogSource {
+  PANEL
+  MCP
+}
+
+enum LogObjectType {
+  PAGE
+  FOLDER
+  MEDIA
+  SCRIPT
+  USER
+  SETTINGS
+  SPLIT_TEST
+}

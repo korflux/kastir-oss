@@ -1,0 +1,76 @@
+#!/bin/sh
+# Auto-bump package.json version before push, based on commit type since upstream.
+# Setup (once per clone): git config core.hooksPath .githooks
+#
+# Preferível: `pnpm push` — roda o bump *antes* do git push, então este hook
+# só valida e o comando termina com exit 0 (sem "failed to push some refs").
+#
+# `git push` cru ainda funciona: se faltar bump, este hook cria o commit,
+# empurra o HEAD novo e cancela o transfer original (o pai ainda aponta pro
+# sha pré-bump). Nesse caminho o git imprime um erro inofensivo — use
+# `pnpm push` pra evitar.
+if [ -n "$KASTIR_VERSION_BUMPED" ]; then
+  exit 0
+fi
+
+remote="$1"
+count=0
+local_ref=""
+local_sha=""
+remote_ref=""
+remote_sha=""
+while read -r lref lsha rref rsha; do
+  [ "$lsha" = "0000000000000000000000000000000000000000" ] && continue
+  count=$((count + 1))
+  local_ref="$lref"
+  local_sha="$lsha"
+  remote_ref="$rref"
+  remote_sha="$rsha"
+done
+
+[ "$count" -eq 0 ] && exit 0
+if [ "$count" -gt 1 ]; then
+  echo "[pre-push] pushing multiple branches in one command isn't supported by the version-bump hook — push them one at a time." >&2
+  exit 1
+fi
+
+if [ "$(git symbolic-ref -q HEAD)" != "$local_ref" ]; then
+  echo "[pre-push] $local_ref isn't the checked-out branch — skipping auto-bump, bump manually if needed." >&2
+  exit 0
+fi
+
+# Tip que o git vai enviar já tem version diferente da base → bump já feito
+# (ex.: `pnpm push` rodou auto-bump-version.mjs antes). Deixa o push seguir.
+if [ "$remote_sha" != "0000000000000000000000000000000000000000" ]; then
+  base_version=$(git show "$remote_sha:package.json" 2>/dev/null | grep -m1 '"version"' | sed -E 's/.*"version": *"([^"]+)".*/\1/')
+  tip_version=$(git show "$local_sha:package.json" 2>/dev/null | grep -m1 '"version"' | sed -E 's/.*"version": *"([^"]+)".*/\1/')
+  if [ -n "$base_version" ] && [ -n "$tip_version" ] && [ "$base_version" != "$tip_version" ]; then
+    exit 0
+  fi
+fi
+
+# Cria commit de bump se o range de commits pedir (stdout: "bumped X" | "skip …").
+bump_out=$(node scripts/auto-bump-version.mjs) || {
+  echo "[pre-push] auto-bump failed" >&2
+  exit 1
+}
+
+case "$bump_out" in
+  bumped\ *)
+    new_version=${bump_out#bumped }
+    new_sha=$(git rev-parse HEAD)
+    # Pai ainda empurra local_sha antigo — publicamos o HEAD novo e cancelamos.
+    if KASTIR_VERSION_BUMPED=1 git push "$remote" "$new_sha:$remote_ref"; then
+      echo "[pre-push] bumped version to $new_version and pushed it."
+      echo "[pre-push] Ignore the next 'failed to push some refs' — already on remote."
+      echo "[pre-push] Tip: 'pnpm push' avoids that message (bump before transfer)."
+    else
+      echo "[pre-push] bumped version to $new_version but the retry push failed — push again manually." >&2
+    fi
+    exit 1
+    ;;
+  *)
+    # skip / nothing to bump — push normal
+    exit 0
+    ;;
+esac

@@ -1,0 +1,41 @@
+model SiteSettings {
+  id                         String    @id @default("singleton")
+  siteTitle                  String
+  tagline                    String?
+  seoDescription              String?
+  faviconMediaId             String?
+  siteUrl                    String?
+  siteLanguage               String    @default("en")
+  timezone                   String    @default("UTC")
+  dateFormat                 String    @default("DD/MM/YYYY")
+  timeFormat                 String    @default("24H")
+  weekStartsOn               WeekStart @default(SUNDAY)
+  homePageId                 String?
+  indexable                  Boolean   @default(true)
+  sitemapEnabled             Boolean   @default(true)
+  notFoundPageId             String?
+  notFoundRedirectToHome     Boolean   @default(false)
+  allowAiCrawlers            Boolean   @default(true)
+  cloudflareApiTokenEncrypted String?
+  cloudflareZoneId           String?
+  webpConversionEnabled      Boolean   @default(true)
+  // Janela normal de revisões (Pages + Custom Code). Fora disso o job não corta.
+  revisionRetentionLimit     Int       @default(5)
+  // Agendamento de snapshot automático (fase 33) — desligado por padrão.
+  backupAutoEnabled          Boolean   @default(false)
+  backupIntervalDays         Int       @default(1)
+  backupAutoHour             Int       @default(0) // 0-23 no fuso de timezone
+  backupAutoMinute           Int       @default(0) // 0-59
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+}
+
+enum WeekStart {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}

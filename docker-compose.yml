@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kastir}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kastir}
+      POSTGRES_DB: ${POSTGRES_DB:-kastir}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - kastir-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER:-kastir} -d $${POSTGRES_DB:-kastir}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--requirepass",
+        "${REDIS_PASSWORD:-kastir}",
+      ]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - kastir-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-kastir}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  kastir-postgres:
+  kastir-redis:

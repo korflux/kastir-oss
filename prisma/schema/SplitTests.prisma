@@ -1,0 +1,83 @@
+enum SplitCampaignStatus {
+  ACTIVE
+  PAUSED
+}
+
+enum SplitDestinationStatus {
+  ACTIVE
+  PAUSED
+}
+
+model SplitCampaign {
+  id           String               @id @default(cuid())
+  name         String
+  slug         String               @unique
+  status       SplitCampaignStatus  @default(ACTIVE)
+  authorId     String
+  author       User                 @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  destinations SplitDestination[]
+  events       SplitRedirectEvent[]
+  deletedAt    DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([status])
+  @@index([authorId])
+  @@index([deletedAt])
+  @@index([status, deletedAt])
+}
+
+model SplitDestination {
+  id         String                 @id @default(cuid())
+  campaignId String
+  campaign   SplitCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  /// Absolute https?:// URL or site-absolute path starting with /
+  url        String
+  label      String?
+  status     SplitDestinationStatus @default(ACTIVE)
+  /// Stable order: remainder weight + deficit tie-break
+  sortOrder  Int                    @default(0)
+  hitCount   Int                    @default(0)
+  events     SplitRedirectEvent[]
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+
+  @@index([campaignId, status])
+  @@index([campaignId, sortOrder])
+}
+
+model SplitRedirectEvent {
+  id            String           @id @default(cuid())
+  campaignId    String
+  campaign      SplitCampaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  destinationId String
+  destination   SplitDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+
+  @@index([campaignId, createdAt])
+  @@index([destinationId, createdAt])
+}
+
+/// Daily rollup kept after raw SplitRedirectEvent rows past the retention
+/// window are purged (see expireSplitRedirectEvents job).
+///
+/// campaignId/destinationId are intentionally plain strings, not @relations:
+/// the whole point of this table is to outlive the raw events once purged,
+/// so its rows must NOT cascade-delete when a SplitDestination/SplitCampaign
+/// is hard-deleted (the documented default for removing a destination with
+/// history). The tradeoff is accepted, not a bug: deleting a destination
+/// with history orphans its daily-stat rows (no FK to cascade from, no
+/// cleanup job for this table in phase 18) — they keep occupying storage,
+/// invisible to any UI that joins through the now-gone destination.
+model SplitRedirectDailyStat {
+  id            String   @id @default(cuid())
+  campaignId    String
+  destinationId String
+  day           DateTime @db.Date
+  hits          Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([destinationId, day])
+  @@index([campaignId, day])
+}

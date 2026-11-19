@@ -1,0 +1,51 @@
+model MediaFolder {
+  id        String       @id @default(cuid())
+  name      String
+  color     String?
+  parentId  String?
+  parent    MediaFolder? @relation("MediaFolderTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children  MediaFolder[] @relation("MediaFolderTree")
+  files     MediaFile[]
+  isBase    Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([parentId])
+  @@index([isBase])
+}
+
+model MediaFile {
+  id               String                 @id @default(cuid())
+  name             String
+  fileName         String
+  url              String                 @unique
+  mimeType         String
+  category         MediaCategory
+  sizeBytes        Int
+  alt              String?
+  description      String?
+  folderId         String
+  folder           MediaFolder            @relation(fields: [folderId], references: [id], onDelete: Restrict)
+  processingStatus MediaProcessingStatus  @default(READY)
+  processingToken  String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@index([folderId])
+  @@index([category])
+  @@index([processingStatus])
+  @@index([createdAt])
+}
+
+enum MediaCategory {
+  IMAGE_RASTER
+  IMAGE_SVG
+  DOCUMENT_PDF
+  VIDEO_MP4
+}
+
+enum MediaProcessingStatus {
+  PROCESSING
+  READY
+  FAILED
+}
